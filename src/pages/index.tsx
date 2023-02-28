@@ -1,11 +1,12 @@
 import type { NextPage } from 'next'
-import { Container, Flex, Heading, Text, VStack, IconButton, Checkbox } from '@chakra-ui/react'
-import { MdPlayArrow, MdPause } from 'react-icons/md';
+import { Container, Flex, Heading, Text, VStack, IconButton, Checkbox, HStack, CloseButton } from '@chakra-ui/react'
+import { MdPlayArrow, MdPause, MdMenu, MdSettings } from 'react-icons/md';
 
 import '../styles/pages/Home.module.scss'
 import { MetronomeSlider } from '../components/Slider'
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { BpmContext } from '../contexts/BpmContext';
+import { Menu } from '../components/Menu';
 
 let compassTimer: NodeJS.Timer;
 
@@ -14,25 +15,24 @@ const Home: NextPage = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [markFirstTick, setMarkFirstTick] = useState(true);
   const [compassCounter, setCompassCounter] = useState(0)
-  const [beats, setBeats] = useState(4);
   const [strongPulse, setStrongPulse] = useState<HTMLAudioElement>();
   const [weakPulse, setWeakPulse] = useState<HTMLAudioElement>();
 
-  const { bpm } = useContext(BpmContext);
+  const { bpm, beats } = useContext(BpmContext);
 
   const playBpmPulse = useCallback(() => {
     setCompassCounter(prevState => {
-      if (prevState === 4 || prevState === 0) {
+      if (prevState === beats || prevState === 0) {
         markFirstTick ?
-        strongPulse?.play()
-        : weakPulse?.play();
+          strongPulse?.play()
+          : weakPulse?.play();
         return prevState = 1
       } else {
         weakPulse?.play();
         return prevState + 1
       }
     });
-  }, [strongPulse, weakPulse, markFirstTick]);
+  }, [strongPulse, weakPulse, markFirstTick, beats]);
 
   const startMetronome = useCallback(() => {
     setIsPlaying(true)
@@ -66,9 +66,26 @@ const Home: NextPage = () => {
             justifyContent='space-between'
             borderRadius={20}
             boxShadow="lg"
+            position="relative"
             padding={10}>
-            <Text fontSize='6xl'>{compassCounter}</Text>
-            <MetronomeSlider isDisabled={isPlaying}/>
+            <Menu />
+            <HStack
+              wrap="wrap"
+              align="center"
+              justify="center"
+              spacing="0.25rem"
+              height="80px">
+              {Array.from(Array(beats)).map((beat, index) =>
+                <IconButton
+                  key={beat}
+                  cursor="default"
+                  colorScheme={compassCounter === index + 1 ? "purple" : "gray"}
+                  isRound={true}
+                  aria-label='Beats'
+                  icon={<p>{index + 1}</p>} />)
+              }
+            </HStack>
+            <MetronomeSlider isDisabled={isPlaying} />
             {isPlaying ? <IconButton
               aria-label='Search database'
               icon={<MdPause />}
@@ -91,7 +108,7 @@ const Home: NextPage = () => {
               defaultChecked
               onChange={(e) => setMarkFirstTick(e.target.checked)}
             >
-              Marcar tempo 1
+              Set first beat
             </Checkbox>
           </VStack>
         </VStack>
